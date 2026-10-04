@@ -15,18 +15,22 @@
           "name": "{{ form.name }}",
           "domain": "{{ form.domain }}",
           "description": "{{ form.description }}",
-          "lifecycle_stage": "urn:li:lifecycleStageType:DRAFT",
+          "structured_property": {
+            "urn": "urn:li:structuredProperty:io.mycompany.status",
+            "value": "{{ form.value }}"
+          },
+          "owner": "{{ requester.urn }}",
           "workflow_urn": "urn:li:actionWorkflow:8a96234f-96b7-465b-a633-579d8bf2cf8d"
         }
       }
     ],
     "engineId": "urn:li:dataHubIngestionSource:0ae5de7b-d931-4e18-a87c-44bd3951b368",
     "workflowUrn": "urn:li:actionWorkflow:8a96234f-96b7-465b-a633-579d8bf2cf8d",
-    "description": "When the request is approved, create the data product in the chosen domain and set its lifecycle stage."
+    "description": "When the request is approved, create the data product in the chosen domain, set its structured property, and add the requester as owner."
   },
   {
-    "id": "set-data-product-lifecycle",
-    "name": "Set data product lifecycle stage",
+    "id": "set-data-product-property",
+    "name": "Set data product structured property",
     "enabled": true,
     "on": {
       "operation": "COMPLETED",
@@ -34,17 +38,20 @@
     },
     "steps": [
       {
-        "id": "set-lifecycle-stage",
-        "type": "set_data_product_lifecycle",
+        "id": "set-property",
+        "type": "set_data_product_property",
         "params": {
           "entity": "{{ entity.urn }}",
-          "lifecycle_stage": "urn:li:lifecycleStageType:PUBLISHED",
+          "structured_property": {
+            "urn": "urn:li:structuredProperty:io.mycompany.status",
+            "value": "{{ form.value }}"
+          },
           "workflow_urn": "urn:li:actionWorkflow:8a96234f-96b7-465b-a633-579d8bf2cf8d"
         }
       }
     ],
     "engineId": "urn:li:dataHubIngestionSource:0ae5de7b-d931-4e18-a87c-44bd3951b368",
     "workflowUrn": "urn:li:actionWorkflow:8a96234f-96b7-465b-a633-579d8bf2cf8d",
-    "description": "When the request is approved, set the lifecycle stage on the data product the workflow was launched from."
+    "description": "When the request is approved, set the structured property on the data product the workflow was launched from."
   }
 ]

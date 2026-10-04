@@ -31,14 +31,14 @@ def test_form_fields_render_into_create_params() -> None:
         {
             "name": "{{ fields.name }}",
             "domain": "{{ fields.domain }}",
-            "lifecycle_stage": "urn:li:lifecycleStageType:DRAFT",
+            "structured_property": "urn:li:structuredProperty:io.mycompany.status",
         },
         context,
     )
     assert rendered == {
         "name": "Customer 360",
         "domain": "urn:li:domain:marketing",
-        "lifecycle_stage": "urn:li:lifecycleStageType:DRAFT",
+        "structured_property": "urn:li:structuredProperty:io.mycompany.status",
     }
 
 
@@ -55,3 +55,29 @@ def test_entity_urn_template() -> None:
 
 def test_rejected_request_is_ignored() -> None:
     assert not should_handle({}, {"result": "REJECTED", "operation": "COMPLETED"})
+
+
+def test_property_assignment_reads_nested_value() -> None:
+    from data_product_actions.graphql_ops import property_assignment
+
+    urn, value = property_assignment(
+        {
+            "structured_property": {
+                "urn": "urn:li:structuredProperty:io.mycompany.status",
+                "value": "Draft",
+            }
+        }
+    )
+    assert urn == "urn:li:structuredProperty:io.mycompany.status"
+    assert value == "Draft"
+
+
+def test_property_values_keep_strings_and_numbers() -> None:
+    from data_product_actions.graphql_ops import property_values
+
+    assert property_values("Draft") == [{"stringValue": "Draft"}]
+    assert property_values(3) == [{"numberValue": 3.0}]
+    assert property_values(["a", "b"]) == [
+        {"stringValue": "a"},
+        {"stringValue": "b"},
+    ]

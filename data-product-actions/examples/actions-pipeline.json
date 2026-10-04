@@ -31,7 +31,11 @@
       "name": "{{ fields.name }}",
       "domain": "{{ fields.domain }}",
       "description": "{{ fields.description }}",
-      "lifecycle_stage": "urn:li:lifecycleStageType:DRAFT",
+      "structured_property": {
+        "urn": "urn:li:structuredProperty:myProperty",
+        "value": "{{ fields.value }}"
+      },
+      "owner": "{{ fields.owner }}",
       "workflow_urn": "urn:li:actionWorkflow:8a96234f-96b7-465b-a633-579d8bf2cf8d"
     }
   },

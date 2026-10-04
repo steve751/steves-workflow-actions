@@ -5,7 +5,7 @@ src/data_product_actions/context.py
 src/data_product_actions/create_product.py
 src/data_product_actions/engine_steps.py
 src/data_product_actions/graphql_ops.py
-src/data_product_actions/set_lifecycle.py
+src/data_product_actions/set_property.py
 src/data_product_actions.egg-info/PKG-INFO
 src/data_product_actions.egg-info/SOURCES.txt
 src/data_product_actions.egg-info/dependency_links.txt

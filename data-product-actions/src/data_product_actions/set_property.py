@@ -1,4 +1,4 @@
-"""Set the lifecycle stage on a data product when a workflow request is accepted."""
+"""Set a structured property on a data product when a workflow request is accepted."""
 
 from __future__ import annotations
 
@@ -14,24 +14,24 @@ from data_product_actions.context import (
     render_mapping,
     should_handle,
 )
-from data_product_actions.graphql_ops import set_lifecycle_stage
+from data_product_actions.graphql_ops import set_structured_property
 
 logger = logging.getLogger(__name__)
 
 
-class SetDataProductLifecycleAction(Action):
-    """Set the lifecycle stage on an existing data product.
+class SetDataProductPropertyAction(Action):
+    """Set a structured property on an existing data product.
 
     Config or step params:
       entity: data product URN, ``{{ entity.urn }}``, or ``{{ fields.data_product }}``
-      lifecycle_stage: lifecycle stage URN, for example ``urn:li:lifecycleStageType:PUBLISHED``
+      structured_property: ``{urn, value}`` to store on the product
       workflow_urn: only handle this workflow
     """
 
     @classmethod
     def create(
         cls, config_dict: dict, ctx: PipelineContext
-    ) -> "SetDataProductLifecycleAction":
+    ) -> "SetDataProductPropertyAction":
         return cls(config_dict or {}, ctx)
 
     def __init__(self, config: dict, ctx: PipelineContext) -> None:
@@ -43,8 +43,12 @@ class SetDataProductLifecycleAction(Action):
         if not should_handle(self.config, context):
             return None
         params = render_mapping(self.config, context)
-        urn = set_lifecycle_stage(self._graph(), params)
-        logger.info("Set lifecycle stage on %s to %s", urn, params.get("lifecycle_stage"))
+        urn = set_structured_property(self._graph(), params)
+        logger.info(
+            "Set %s on %s",
+            params.get("structured_property") or params.get("property"),
+            urn,
+        )
         return urn
 
     def close(self) -> None:

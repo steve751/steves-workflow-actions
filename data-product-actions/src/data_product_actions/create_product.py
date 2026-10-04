@@ -14,7 +14,11 @@ from data_product_actions.context import (
     render_mapping,
     should_handle,
 )
-from data_product_actions.graphql_ops import create_data_product, set_lifecycle_stage
+from data_product_actions.graphql_ops import (
+    add_owners,
+    create_data_product,
+    set_structured_property,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +30,9 @@ class CreateDataProductAction(Action):
       name: product name, or ``{{ fields.name }}``
       domain: existing domain URN, or ``{{ fields.domain }}``
       description: optional, or ``{{ fields.description }}``
-      lifecycle_stage: optional stage URN applied to the new product
+      structured_property: optional ``{urn, value}`` applied to the new product
+      owner: optional user or group URN
+      ownership_type: optional, default TECHNICAL_OWNER
       workflow_urn: only handle this workflow
     """
 
@@ -44,19 +50,26 @@ class CreateDataProductAction(Action):
             return None
         params = render_mapping(self.config, context)
         urn = create_data_product(self._graph(), params)
-        stage = params.get("lifecycle_stage") or params.get("lifecycle_stage_urn")
-        if stage:
-            set_lifecycle_stage(
-                self._graph(),
-                {"entity": urn, "lifecycle_stage": stage},
-            )
-            logger.info("Created %s and set lifecycle stage %s", urn, stage)
-        else:
-            logger.info("Created %s", urn)
+        graph = self._graph()
+        if self._wants_property(params):
+            set_structured_property(graph, {**params, "entity": urn})
+        if params.get("owner"):
+            add_owners(graph, {**params, "entity": urn})
+        logger.info("Created %s", urn)
         return urn
 
     def close(self) -> None:
         return None
+
+    @staticmethod
+    def _wants_property(params: dict) -> bool:
+        return bool(
+            params.get("structured_property")
+            or params.get("property")
+            or params.get("value")
+            or params.get("values")
+            or params.get("structured_property_value")
+        )
 
     def _graph(self) -> Any:
         wrapper = self.ctx.graph
