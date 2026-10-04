@@ -47,7 +47,7 @@ def register_engine_steps() -> None:
 
     class SetPropertyParams(StepParams):
         entity: str
-        structured_property: StructuredPropertyAssignment
+        structured_properties: list[StructuredPropertyAssignment]
         workflow_urn: Optional[str] = None
 
     @step(
@@ -84,7 +84,7 @@ def register_engine_steps() -> None:
     @step(
         "set_data_product_property",
         label="Set data product property",
-        description="Set a structured property on an existing data product.",
+        description="Set or update structured properties on an existing data product.",
         group="Metadata",
         params=SetPropertyParams,
         outputs={"urn": "URN of the data product"},
@@ -93,25 +93,14 @@ def register_engine_steps() -> None:
         skipped = _other_workflow(params.workflow_urn, ctx)
         if skipped:
             return skipped
+        written = [item.model_dump() for item in params.structured_properties]
         if ctx.dry_run or ctx.graph is None:
-            return {
-                "dryRun": True,
-                "urn": params.entity,
-                "structuredProperty": params.structured_property.urn,
-                "value": params.structured_property.value,
-            }
+            return {"dryRun": True, "urn": params.entity, "structuredProperties": written}
         urn = set_structured_property(
             ctx.graph,
-            {
-                "entity": params.entity,
-                "structured_property": params.structured_property.model_dump(),
-            },
+            {"entity": params.entity, "structured_properties": written},
         )
-        return {
-            "urn": urn,
-            "structuredProperty": params.structured_property.urn,
-            "value": params.structured_property.value,
-        }
+        return {"urn": urn, "structuredProperties": written}
 
 
 def _other_workflow(expected: Optional[str], ctx: Any) -> Optional[dict[str, Any]]:

@@ -58,18 +58,19 @@ def test_rejected_request_is_ignored() -> None:
 
 
 def test_property_assignment_reads_nested_value() -> None:
-    from data_product_actions.graphql_ops import property_assignment
+    from data_product_actions.graphql_ops import property_assignments
 
-    urn, value = property_assignment(
+    assert property_assignments(
         {
-            "structured_property": {
-                "urn": "urn:li:structuredProperty:io.mycompany.status",
-                "value": "Draft",
-            }
+            "structured_properties": [
+                {"urn": "urn:li:structuredProperty:io.mycompany.status", "value": "Draft"},
+                {"urn": "urn:li:structuredProperty:io.mycompany.score", "value": 4},
+            ]
         }
-    )
-    assert urn == "urn:li:structuredProperty:io.mycompany.status"
-    assert value == "Draft"
+    ) == [
+        ("urn:li:structuredProperty:io.mycompany.status", "Draft"),
+        ("urn:li:structuredProperty:io.mycompany.score", 4),
+    ]
 
 
 def test_property_values_keep_strings_and_numbers() -> None:

@@ -1,4 +1,4 @@
-"""Set a structured property on a data product when a workflow request is accepted."""
+"""Set structured properties on a data product when a workflow request is accepted."""
 
 from __future__ import annotations
 
@@ -20,11 +20,11 @@ logger = logging.getLogger(__name__)
 
 
 class SetDataProductPropertyAction(Action):
-    """Set a structured property on an existing data product.
+    """Set or update structured properties on an existing data product.
 
     Config or step params:
       entity: data product URN, ``{{ entity.urn }}``, or ``{{ fields.data_product }}``
-      structured_property: ``{urn, value}`` to store on the product
+      structured_properties: list of ``{urn, value}`` to store on the product
       workflow_urn: only handle this workflow
     """
 
@@ -44,11 +44,7 @@ class SetDataProductPropertyAction(Action):
             return None
         params = render_mapping(self.config, context)
         urn = set_structured_property(self._graph(), params)
-        logger.info(
-            "Set %s on %s",
-            params.get("structured_property") or params.get("property"),
-            urn,
-        )
+        logger.info("Set structured properties on %s", urn)
         return urn
 
     def close(self) -> None:

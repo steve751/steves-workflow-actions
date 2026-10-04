@@ -30,7 +30,7 @@
   },
   {
     "id": "set-data-product-property",
-    "name": "Set data product structured property",
+    "name": "Update data product structured properties",
     "enabled": true,
     "on": {
       "operation": "COMPLETED",
@@ -42,16 +42,22 @@
         "type": "set_data_product_property",
         "params": {
           "entity": "{{ entity.urn }}",
-          "structured_property": {
-            "urn": "urn:li:structuredProperty:io.mycompany.status",
-            "value": "{{ form.value }}"
-          },
+          "structured_properties": [
+            {
+              "urn": "urn:li:structuredProperty:io.mycompany.status",
+              "value": "{{ form.status }}"
+            },
+            {
+              "urn": "urn:li:structuredProperty:io.mycompany.score",
+              "value": "{{ form.score }}"
+            }
+          ],
           "workflow_urn": "urn:li:actionWorkflow:8a96234f-96b7-465b-a633-579d8bf2cf8d"
         }
       }
     ],
     "engineId": "urn:li:dataHubIngestionSource:0ae5de7b-d931-4e18-a87c-44bd3951b368",
     "workflowUrn": "urn:li:actionWorkflow:8a96234f-96b7-465b-a633-579d8bf2cf8d",
-    "description": "When the request is approved, set the structured property on the data product the workflow was launched from."
+    "description": "When the request is approved, set the structured properties on the data product the workflow was launched from."
   }
 ]

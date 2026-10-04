@@ -64,20 +64,20 @@ mutation batchAddOwners($input: BatchAddOwnersInput!) {
 
 
 def set_structured_property(graph: Any, params: dict[str, Any]) -> str:
+    """Upsert every structured property in the params onto the entity."""
     entity_urn = _required(params, "entity", "entity_urn", "urn")
-    property_urn, raw_value = property_assignment(params)
-    if not property_urn:
-        raise ValueError(
-            "Missing structured property URN. Set structured_property.urn"
-        )
-    values = property_values(raw_value)
+    assignments = property_assignments(params)
     graph.execute_graphql(
         query=_UPSERT_STRUCTURED_PROPERTIES,
         variables={
             "input": {
                 "assetUrn": entity_urn,
                 "structuredPropertyInputParams": [
-                    {"structuredPropertyUrn": property_urn, "values": values}
+                    {
+                        "structuredPropertyUrn": property_urn,
+                        "values": property_values(raw_value),
+                    }
+                    for property_urn, raw_value in assignments
                 ],
             }
         },
@@ -120,15 +120,48 @@ def add_owners(graph: Any, params: dict[str, Any]) -> str:
     return entity_urn
 
 
+def property_assignments(params: dict[str, Any]) -> list[tuple[str, Any]]:
+    """Read ``structured_properties: [{urn, value}, ...]``.
+
+    A single ``structured_property: {urn, value}`` is accepted too, so the
+    create step can keep passing one property.
+    """
+    items: list[Any] = []
+    raw_list = params.get("structured_properties")
+    if isinstance(raw_list, list):
+        items.extend(raw_list)
+    single = params.get("structured_property")
+    if single:
+        items.append(single)
+    if not items and (params.get("property") or params.get("value") is not None):
+        items.append(
+            {
+                "urn": params.get("property") or "",
+                "value": params.get(
+                    "value", params.get("values", params.get("structured_property_value"))
+                ),
+            }
+        )
+    if not items:
+        raise ValueError(
+            "Missing structured properties. Set structured_properties to a list of {urn, value}"
+        )
+    assignments: list[tuple[str, Any]] = []
+    for item in items:
+        if not isinstance(item, dict):
+            raise ValueError(
+                "Each structured property must be an object with urn and value"
+            )
+        urn = str(item.get("urn") or item.get("property") or "")
+        if not urn:
+            raise ValueError("Missing structured property URN. Set urn under each entry")
+        assignments.append((urn, item.get("value", item.get("values"))))
+    return assignments
+
+
 def property_assignment(params: dict[str, Any]) -> tuple[str, Any]:
-    """Read ``structured_property: {urn, value}``. A bare URN plus ``value`` still works."""
-    raw = params.get("structured_property")
-    if isinstance(raw, dict):
-        urn = raw.get("urn") or raw.get("property") or ""
-        value = raw.get("value", raw.get("values"))
-        return str(urn), value
-    value = params.get("value", params.get("values", params.get("structured_property_value")))
-    return str(raw or params.get("property") or ""), value
+    """First structured property in ``params``."""
+    return property_assignments(params)[0]
 
 
 def property_values(raw: Any) -> list[dict[str, Any]]:
