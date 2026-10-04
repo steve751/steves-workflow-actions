@@ -1,0 +1,41 @@
+{
+  "name": "create-data-product-on-approval",
+  "enabled": true,
+  "source": {
+    "type": "kafka",
+    "config": {
+      "connection": {
+        "bootstrap": "localhost:9092",
+        "schema_registry_url": "http://localhost:8081"
+      },
+      "topic_routes": {
+        "pe": "PlatformEvent_v1"
+      }
+    }
+  },
+  "filter": {
+    "event_type": "EntityChangeEvent_v1",
+    "event": {
+      "entityType": "actionRequest",
+      "category": "LIFECYCLE",
+      "operation": "COMPLETED",
+      "parameters": {
+        "workflowUrn": "urn:li:actionWorkflow:8a96234f-96b7-465b-a633-579d8bf2cf8d",
+        "result": "ACCEPTED"
+      }
+    }
+  },
+  "action": {
+    "type": "create_data_product",
+    "config": {
+      "name": "{{ fields.name }}",
+      "domain": "{{ fields.domain }}",
+      "description": "{{ fields.description }}",
+      "lifecycle_stage": "urn:li:lifecycleStageType:DRAFT",
+      "workflow_urn": "urn:li:actionWorkflow:8a96234f-96b7-465b-a633-579d8bf2cf8d"
+    }
+  },
+  "datahub": {
+    "server": "http://localhost:8080"
+  }
+}

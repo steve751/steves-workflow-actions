@@ -1,0 +1,139 @@
+Metadata-Version: 2.4
+Name: datahub-workflow-actions
+Version: 0.1.0
+Summary: Workflow engine actions that create a data product and set its lifecycle stage
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+
+# datahub-workflow-actions
+
+Two DataHub actions for a workflow engine:
+
+- `CreateDataProductAction` creates a data product when a request is accepted, and can set its lifecycle stage in the same step.
+- `SetDataProductLifecycleAction` sets the lifecycle stage on a data product that already exists.
+
+The engine installs this package from **Extra Pip Libraries**, then loads the step `type` as a Python class.
+
+## Build the wheel
+
+From this directory:
+
+```bash
+python3 -m pip wheel . --no-deps -w dist
+```
+
+That writes `dist/datahub_workflow_actions-0.1.0-py3-none-any.whl`. A wheel is a zip. Copy it onto the machine that runs the executor, on a path the executor container can read.
+
+On the engine ingestion source, set **Extra Pip Libraries** to that path:
+
+```json
+["/path/inside/the/executor/datahub_workflow_actions-0.1.0-py3-none-any.whl"]
+```
+
+Save the source and run it once so the executor installs the wheel before the rules fire.
+
+## What the workflow form must collect
+
+| Field id | Required | Value |
+| --- | --- | --- |
+| `name` | yes, for create | Display name of the new data product |
+| `domain` | yes, for create | URN of a domain that already exists, such as `urn:li:domain:marketing` |
+| `description` | no | Description stored on the new data product |
+
+`{{ fields.name }}` reads the first value of the form field whose id is `name`. `{{ entity.urn }}` is the entity the workflow was launched from.
+
+`lifecycle_stage` must be a lifecycle stage URN that exists in your instance and applies to data products. `urn:li:lifecycleStageType:DRAFT` and `urn:li:lifecycleStageType:PUBLISHED` in the examples are placeholders. Replace them with stages from your catalog. The caller needs permission to manage data products on the target domain.
+
+## Example: create a product when the request is approved
+
+Use this when someone submits a form and an approver accepts it. The create step also sets the lifecycle stage on the product it just created, so you do not need the new URN in a later step.
+
+`rules.json` in this folder is the same document, with both rules.
+
+```json
+{
+  "id": "create-data-product",
+  "name": "Create data product when approved",
+  "enabled": true,
+  "on": {
+    "operation": "COMPLETED",
+    "result": "ACCEPTED"
+  },
+  "steps": [
+    {
+      "id": "create-data-product",
+      "type": "datahub_workflow_actions.create_product:CreateDataProductAction",
+      "params": {
+        "name": "{{ fields.name }}",
+        "domain": "{{ fields.domain }}",
+        "description": "{{ fields.description }}",
+        "lifecycle_stage": "urn:li:lifecycleStageType:DRAFT",
+        "workflow_urn": "urn:li:actionWorkflow:8a96234f-96b7-465b-a633-579d8bf2cf8d"
+      }
+    }
+  ],
+  "engineId": "urn:li:dataHubIngestionSource:0ae5de7b-d931-4e18-a87c-44bd3951b368",
+  "workflowUrn": "urn:li:actionWorkflow:8a96234f-96b7-465b-a633-579d8bf2cf8d",
+  "description": "When the request is approved, create the data product in the chosen domain and set its lifecycle stage."
+}
+```
+
+A submitted form like this:
+
+```json
+{
+  "name": ["Customer 360"],
+  "domain": ["urn:li:domain:marketing"],
+  "description": ["Customer data product"]
+}
+```
+
+creates a data product named Customer 360 in `urn:li:domain:marketing`, then sets its lifecycle stage to the URN in `lifecycle_stage`.
+
+Optional params on the create step:
+
+- `id` — fixed id used in the data product URN. Omit it and DataHub generates one.
+- `parent_data_product` — URN of an existing parent data product.
+- `workflow_urn` — ignore completion events from any other workflow.
+
+## Example: change the lifecycle stage of an existing data product
+
+Launch this workflow from the data product page. `{{ entity.urn }}` is that product.
+
+```json
+{
+  "id": "set-data-product-lifecycle",
+  "name": "Set data product lifecycle stage",
+  "enabled": true,
+  "on": {
+    "operation": "COMPLETED",
+    "result": "ACCEPTED"
+  },
+  "steps": [
+    {
+      "id": "set-lifecycle-stage",
+      "type": "datahub_workflow_actions.set_lifecycle:SetDataProductLifecycleAction",
+      "params": {
+        "entity": "{{ entity.urn }}",
+        "lifecycle_stage": "urn:li:lifecycleStageType:PUBLISHED",
+        "workflow_urn": "urn:li:actionWorkflow:8a96234f-96b7-465b-a633-579d8bf2cf8d"
+      }
+    }
+  ],
+  "engineId": "urn:li:dataHubIngestionSource:0ae5de7b-d931-4e18-a87c-44bd3951b368",
+  "workflowUrn": "urn:li:actionWorkflow:8a96234f-96b7-465b-a633-579d8bf2cf8d",
+  "description": "When the request is approved, set the lifecycle stage on the data product the workflow was launched from."
+}
+```
+
+To take the product URN from the form instead of the page it was launched from, set `entity` to `{{ fields.data_product }}` and add a form field whose id is `data_product`.
+
+## Running it as a DataHub Action pipeline
+
+The same classes are registered as `create_data_product` and `set_data_product_lifecycle` on the `datahub_actions.action.plugins` entry point. A pipeline config that listens for the accepted workflow is in `examples/actions-pipeline.json`. Run it with the actions CLI after the wheel is installed in that environment:
+
+```bash
+datahub actions -c examples/actions-pipeline.json
+```
+
+The engine rule above is the path that uses Extra Pip Libraries. The pipeline file is the path that uses `datahub actions` directly.

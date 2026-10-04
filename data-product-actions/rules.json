@@ -1,0 +1,50 @@
+[
+  {
+    "id": "create-data-product",
+    "name": "Create data product when approved",
+    "enabled": true,
+    "on": {
+      "operation": "COMPLETED",
+      "result": "ACCEPTED"
+    },
+    "steps": [
+      {
+        "id": "create-data-product",
+        "type": "datahub_workflow_actions.create_product:CreateDataProductAction",
+        "params": {
+          "name": "{{ fields.name }}",
+          "domain": "{{ fields.domain }}",
+          "description": "{{ fields.description }}",
+          "lifecycle_stage": "urn:li:lifecycleStageType:DRAFT",
+          "workflow_urn": "urn:li:actionWorkflow:8a96234f-96b7-465b-a633-579d8bf2cf8d"
+        }
+      }
+    ],
+    "engineId": "urn:li:dataHubIngestionSource:0ae5de7b-d931-4e18-a87c-44bd3951b368",
+    "workflowUrn": "urn:li:actionWorkflow:8a96234f-96b7-465b-a633-579d8bf2cf8d",
+    "description": "When the request is approved, create the data product in the chosen domain and set its lifecycle stage."
+  },
+  {
+    "id": "set-data-product-lifecycle",
+    "name": "Set data product lifecycle stage",
+    "enabled": true,
+    "on": {
+      "operation": "COMPLETED",
+      "result": "ACCEPTED"
+    },
+    "steps": [
+      {
+        "id": "set-lifecycle-stage",
+        "type": "datahub_workflow_actions.set_lifecycle:SetDataProductLifecycleAction",
+        "params": {
+          "entity": "{{ entity.urn }}",
+          "lifecycle_stage": "urn:li:lifecycleStageType:PUBLISHED",
+          "workflow_urn": "urn:li:actionWorkflow:8a96234f-96b7-465b-a633-579d8bf2cf8d"
+        }
+      }
+    ],
+    "engineId": "urn:li:dataHubIngestionSource:0ae5de7b-d931-4e18-a87c-44bd3951b368",
+    "workflowUrn": "urn:li:actionWorkflow:8a96234f-96b7-465b-a633-579d8bf2cf8d",
+    "description": "When the request is approved, set the lifecycle stage on the data product the workflow was launched from."
+  }
+]
