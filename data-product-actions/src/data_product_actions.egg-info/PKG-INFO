@@ -1,3 +1,10 @@
+Metadata-Version: 2.4
+Name: data-product-actions
+Version: 0.1.0
+Summary: Workflow engine actions that create a data product and set its lifecycle stage
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+
 # data-product-actions
 
 Two DataHub actions for a workflow engine:

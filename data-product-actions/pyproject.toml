@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "datahub-workflow-actions"
+name = "data-product-actions"
 version = "0.1.0"
 description = "Workflow engine actions that create a data product and set its lifecycle stage"
 readme = "README.md"
