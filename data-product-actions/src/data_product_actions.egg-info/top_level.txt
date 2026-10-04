@@ -1,1 +1,1 @@
-datahub_workflow_actions
+data_product_actions

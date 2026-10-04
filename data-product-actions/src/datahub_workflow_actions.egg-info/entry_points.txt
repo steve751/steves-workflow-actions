@@ -1,3 +1,0 @@
-[datahub_actions.action.plugins]
-create_data_product = datahub_workflow_actions.create_product:CreateDataProductAction
-set_data_product_lifecycle = datahub_workflow_actions.set_lifecycle:SetDataProductLifecycleAction

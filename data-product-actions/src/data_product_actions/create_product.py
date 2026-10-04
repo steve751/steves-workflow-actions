@@ -9,12 +9,12 @@ from datahub_actions.action.action import Action
 from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.pipeline.pipeline_context import PipelineContext
 
-from datahub_workflow_actions.context import (
+from data_product_actions.context import (
     context_from_event,
     render_mapping,
     should_handle,
 )
-from datahub_workflow_actions.graphql_ops import create_data_product, set_lifecycle_stage
+from data_product_actions.graphql_ops import create_data_product, set_lifecycle_stage
 
 logger = logging.getLogger(__name__)
 

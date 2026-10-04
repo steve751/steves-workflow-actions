@@ -1,6 +1,6 @@
 """Template and field parsing. Does not import the action framework."""
 
-from datahub_workflow_actions.context import (
+from data_product_actions.context import (
     context_from_event,
     render,
     render_mapping,

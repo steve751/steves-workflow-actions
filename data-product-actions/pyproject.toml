@@ -4,15 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "data-product-actions"
-version = "0.1.0"
+version = "0.2.0"
 description = "Workflow engine actions that create a data product and set its lifecycle stage"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = []
 
 [project.entry-points."datahub_actions.action.plugins"]
-create_data_product = "datahub_workflow_actions.create_product:CreateDataProductAction"
-set_data_product_lifecycle = "datahub_workflow_actions.set_lifecycle:SetDataProductLifecycleAction"
+create_data_product = "data_product_actions.create_product:CreateDataProductAction"
+set_data_product_lifecycle = "data_product_actions.set_lifecycle:SetDataProductLifecycleAction"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -10,11 +10,11 @@
     "steps": [
       {
         "id": "create-data-product",
-        "type": "datahub_workflow_actions.create_product:CreateDataProductAction",
+        "type": "create_data_product",
         "params": {
-          "name": "{{ fields.name }}",
-          "domain": "{{ fields.domain }}",
-          "description": "{{ fields.description }}",
+          "name": "{{ form.name }}",
+          "domain": "{{ form.domain }}",
+          "description": "{{ form.description }}",
           "lifecycle_stage": "urn:li:lifecycleStageType:DRAFT",
           "workflow_urn": "urn:li:actionWorkflow:8a96234f-96b7-465b-a633-579d8bf2cf8d"
         }
@@ -35,7 +35,7 @@
     "steps": [
       {
         "id": "set-lifecycle-stage",
-        "type": "datahub_workflow_actions.set_lifecycle:SetDataProductLifecycleAction",
+        "type": "set_data_product_lifecycle",
         "params": {
           "entity": "{{ entity.urn }}",
           "lifecycle_stage": "urn:li:lifecycleStageType:PUBLISHED",

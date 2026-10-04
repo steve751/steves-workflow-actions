@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: data-product-actions
-Version: 0.1.0
+Version: 0.2.0
 Summary: Workflow engine actions that create a data product and set its lifecycle stage
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
@@ -12,28 +12,28 @@ Two DataHub actions for a workflow engine:
 - `CreateDataProductAction` creates a data product when a request is accepted, and can set its lifecycle stage in the same step.
 - `SetDataProductLifecycleAction` sets the lifecycle stage on a data product that already exists.
 
-The engine installs this package from **Extra Pip Libraries**, then loads the step `type` as a Python class.
+The engine installs this package from **Extra Pip Libraries**. The wheel registers step types `create_data_product` and `set_data_product_lifecycle`.
 
 ## Build the wheel
 
 From this directory:
 
 ```bash
-python3 -m pip wheel . --no-deps -w dist
+python3 pack_wheel.py
 ```
 
-That writes `dist/data_product_actions-0.1.0-py3-none-any.whl`. A wheel is a zip. The pip name is `data-product-actions` on purpose. The engine already installs `https://github.com/brock-acryl/datahub-workflow-actions/archive/main.zip` under the name `datahub-workflow-actions`. uv rejects two URLs for the same package name, which is what happened with the earlier wheel.
+That writes `dist/data_product_actions-0.2.0-py3-none-any.whl`. The pip name is `data-product-actions` and the Python package is `data_product_actions`. Both differ from the engine package `datahub-workflow-actions` / `datahub_workflow_actions`. Sharing that Python package overwrites the engine's `context.py`, and the engine then fails with `Caught exception while attempting to instantiate Action with type workflow_actions`.
 
 On the engine ingestion source, set **Extra Pip Libraries** to both, and keep the engine zip:
 
 ```json
 [
   "https://github.com/brock-acryl/datahub-workflow-actions/archive/main.zip",
-  "https://github.com/steve751/steves-workflow-actions/raw/refs/heads/main/data-product-actions/dist/data_product_actions-0.1.0-py3-none-any.whl"
+  "https://github.com/steve751/steves-workflow-actions/raw/refs/heads/main/data-product-actions/dist/data_product_actions-0.2.0-py3-none-any.whl"
 ]
 ```
 
-Replace the old `datahub_workflow_actions-0.1.0-py3-none-any.whl` URL. Save the source and run it once so the executor installs the wheel before the rules fire. The step `type` strings do not change. They still import `datahub_workflow_actions`.
+Remove every older wheel URL (`datahub_workflow_actions-0.1.0` and `data_product_actions-0.1.0`). Save the source and run it once so the executor builds a new virtualenv. The wheel's site hook registers two step types: `create_data_product` and `set_data_product_lifecycle`.
 
 ## What the workflow form must collect
 
@@ -43,7 +43,7 @@ Replace the old `datahub_workflow_actions-0.1.0-py3-none-any.whl` URL. Save the 
 | `domain` | yes, for create | URN of a domain that already exists, such as `urn:li:domain:marketing` |
 | `description` | no | Description stored on the new data product |
 
-`{{ fields.name }}` reads the first value of the form field whose id is `name`. `{{ entity.urn }}` is the entity the workflow was launched from.
+`{{ form.name }}` reads the form field whose id is `name`. `{{ entity.urn }}` is the entity the workflow was launched from. The engine renders those templates before the step runs.
 
 `lifecycle_stage` must be a lifecycle stage URN that exists in your instance and applies to data products. `urn:li:lifecycleStageType:DRAFT` and `urn:li:lifecycleStageType:PUBLISHED` in the examples are placeholders. Replace them with stages from your catalog. The caller needs permission to manage data products on the target domain.
 
@@ -65,11 +65,11 @@ Use this when someone submits a form and an approver accepts it. The create step
   "steps": [
     {
       "id": "create-data-product",
-      "type": "datahub_workflow_actions.create_product:CreateDataProductAction",
+      "type": "create_data_product",
       "params": {
-        "name": "{{ fields.name }}",
-        "domain": "{{ fields.domain }}",
-        "description": "{{ fields.description }}",
+        "name": "{{ form.name }}",
+        "domain": "{{ form.domain }}",
+        "description": "{{ form.description }}",
         "lifecycle_stage": "urn:li:lifecycleStageType:DRAFT",
         "workflow_urn": "urn:li:actionWorkflow:8a96234f-96b7-465b-a633-579d8bf2cf8d"
       }
@@ -115,7 +115,7 @@ Launch this workflow from the data product page. `{{ entity.urn }}` is that prod
   "steps": [
     {
       "id": "set-lifecycle-stage",
-      "type": "datahub_workflow_actions.set_lifecycle:SetDataProductLifecycleAction",
+      "type": "set_data_product_lifecycle",
       "params": {
         "entity": "{{ entity.urn }}",
         "lifecycle_stage": "urn:li:lifecycleStageType:PUBLISHED",
@@ -129,7 +129,7 @@ Launch this workflow from the data product page. `{{ entity.urn }}` is that prod
 }
 ```
 
-To take the product URN from the form instead of the page it was launched from, set `entity` to `{{ fields.data_product }}` and add a form field whose id is `data_product`.
+To take the product URN from the form instead of the page it was launched from, set `entity` to `{{ form.data_product }}` and add a form field whose id is `data_product`.
 
 ## Running it as a DataHub Action pipeline
 
@@ -139,4 +139,4 @@ The same classes are registered as `create_data_product` and `set_data_product_l
 datahub actions -c examples/actions-pipeline.json
 ```
 
-The engine rule above is the path that uses Extra Pip Libraries. The pipeline file is the path that uses `datahub actions` directly.
+The engine rule above is the path that uses Extra Pip Libraries. Templates there are `{{ form.name }}`. The pipeline file is the path that uses `datahub actions` directly, and its templates are `{{ fields.name }}` because that path reads the raw completion event.
