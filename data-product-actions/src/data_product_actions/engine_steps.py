@@ -33,10 +33,12 @@ def register_engine_steps() -> None:
         lifecycle_stage: Optional[str] = None
         id: Optional[str] = None
         parent_data_product: Optional[str] = None
+        workflow_urn: Optional[str] = None
 
     class SetLifecycleParams(StepParams):
         entity: str
         lifecycle_stage: str
+        workflow_urn: Optional[str] = None
 
     @step(
         "create_data_product",
@@ -47,6 +49,9 @@ def register_engine_steps() -> None:
         outputs={"urn": "URN of the created data product"},
     )
     def create_data_product_step(params: CreateDataProductParams, ctx: RunContext) -> dict:
+        skipped = _other_workflow(params.workflow_urn, ctx)
+        if skipped:
+            return skipped
         if ctx.dry_run or ctx.graph is None:
             return {"dryRun": True, "name": params.name, "domain": params.domain}
         urn = create_data_product(ctx.graph, _payload(params))
@@ -66,6 +71,9 @@ def register_engine_steps() -> None:
         outputs={"urn": "URN of the data product"},
     )
     def set_data_product_lifecycle_step(params: SetLifecycleParams, ctx: RunContext) -> dict:
+        skipped = _other_workflow(params.workflow_urn, ctx)
+        if skipped:
+            return skipped
         if ctx.dry_run or ctx.graph is None:
             return {
                 "dryRun": True,
@@ -77,6 +85,16 @@ def register_engine_steps() -> None:
             {"entity": params.entity, "lifecycle_stage": params.lifecycle_stage},
         )
         return {"urn": urn, "lifecycleStage": params.lifecycle_stage}
+
+
+def _other_workflow(expected: Optional[str], ctx: Any) -> Optional[dict[str, Any]]:
+    """Skip result when the step is pinned to a workflow other than the one that fired."""
+    if not expected:
+        return None
+    actual = ((getattr(ctx, "context", None) or {}).get("workflow") or {}).get("urn")
+    if actual and actual != expected:
+        return {"skipped": True, "reason": f"workflow {actual} != {expected}"}
+    return None
 
 
 def _payload(params: Any) -> dict[str, Any]:
