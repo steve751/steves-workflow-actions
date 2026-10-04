@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
+
+# Workflow date fields arrive as epoch milliseconds, often already stringified
+# in scientific notation (``1.793275843419E12``). The engine ``date`` filter
+# leaves that string unchanged, and a date property rejects anything but YYYY-MM-DD.
+_EPOCH_MILLIS_MIN = 1e11
+_EPOCH_MILLIS_MAX = 1e14
 
 _CREATE_DATA_PRODUCT = """
 mutation createDataProduct($input: CreateDataProductInput!) {
@@ -168,7 +175,8 @@ def property_values(raw: Any) -> list[dict[str, Any]]:
     """Turn a step value into GraphQL property values.
 
     A number is sent as ``numberValue``. Text is sent as ``stringValue``.
-    A list sets every entry.
+    Epoch milliseconds, including a scientific-notation string from a date
+    form field, are sent as ``YYYY-MM-DD``. A list sets every entry.
     """
     if raw is None or raw == "" or raw == []:
         raise ValueError(
@@ -179,6 +187,10 @@ def property_values(raw: Any) -> list[dict[str, Any]]:
     for item in items:
         if isinstance(item, bool) or item is None or item == "":
             raise ValueError(f"Unsupported structured property value: {item!r}")
+        date_text = _date_from_epoch_millis(item)
+        if date_text is not None:
+            encoded.append({"stringValue": date_text})
+            continue
         if isinstance(item, (int, float)):
             encoded.append({"numberValue": float(item)})
             continue
@@ -187,6 +199,25 @@ def property_values(raw: Any) -> list[dict[str, Any]]:
             raise ValueError("Structured property value is blank")
         encoded.append({"stringValue": text})
     return encoded
+
+
+def _date_from_epoch_millis(item: Any) -> str | None:
+    if isinstance(item, bool):
+        return None
+    if isinstance(item, (int, float)):
+        number = float(item)
+    elif isinstance(item, str):
+        try:
+            number = float(item.strip())
+        except ValueError:
+            return None
+    else:
+        return None
+    if number != number or number in (float("inf"), float("-inf")):
+        return None
+    if not (_EPOCH_MILLIS_MIN <= abs(number) < _EPOCH_MILLIS_MAX):
+        return None
+    return datetime.fromtimestamp(number / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
 
 
 def _required(params: dict[str, Any], *keys: str) -> str:

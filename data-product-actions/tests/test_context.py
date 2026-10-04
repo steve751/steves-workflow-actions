@@ -82,3 +82,12 @@ def test_property_values_keep_strings_and_numbers() -> None:
         {"stringValue": "a"},
         {"stringValue": "b"},
     ]
+
+
+def test_property_values_format_epoch_millis_as_date() -> None:
+    from data_product_actions.graphql_ops import property_values
+
+    assert property_values("1.793275843419E12") == [{"stringValue": "2026-10-29"}]
+    assert property_values(1793275843419) == [{"stringValue": "2026-10-29"}]
+    assert property_values("2026-10-29") == [{"stringValue": "2026-10-29"}]
+    assert property_values("Live") == [{"stringValue": "Live"}]

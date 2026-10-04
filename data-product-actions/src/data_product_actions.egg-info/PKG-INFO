@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: data-product-actions
-Version: 0.2.4
+Version: 0.2.5
 Summary: Workflow engine actions that create a data product and set a structured property
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
@@ -26,7 +26,7 @@ From this directory:
 python3 pack_wheel.py
 ```
 
-That writes `dist/data_product_actions-0.2.4-py3-none-any.whl` and adds a `.pth` site hook that imports the package at interpreter start, which is what registers the step types with the engine.
+That writes `dist/data_product_actions-0.2.5-py3-none-any.whl` and adds a `.pth` site hook that imports the package at interpreter start, which is what registers the step types with the engine.
 
 The pip name is `data-product-actions` and the Python package is `data_product_actions`. Both must stay different from the engine's `datahub-workflow-actions` / `datahub_workflow_actions`. See [Troubleshooting](#troubleshooting) for why.
 
@@ -37,7 +37,7 @@ On the engine ingestion source, set **Extra Pip Libraries** to the engine zip pl
 ```json
 [
   "https://github.com/brock-acryl/datahub-workflow-actions/archive/main.zip",
-  "https://github.com/steve751/steves-workflow-actions/raw/refs/heads/main/data-product-actions/dist/data_product_actions-0.2.4-py3-none-any.whl"
+  "https://github.com/steve751/steves-workflow-actions/raw/refs/heads/main/data-product-actions/dist/data_product_actions-0.2.5-py3-none-any.whl"
 ]
 ```
 
@@ -76,7 +76,7 @@ Updates structured properties on a data product that already exists. It does not
 | Param | Required | Value |
 | --- | --- | --- |
 | `entity` | yes | Data product URN. Usually `{{ entity.urn }}` when the workflow is launched from the product page |
-| `structured_properties` | yes | List of `{urn, value}` objects. Each `urn` is a structured property that applies to data products. Each `value` is text, a number, or a list |
+| `structured_properties` | yes | List of `{urn, value}` objects. Each `urn` is a structured property that applies to data products. Each `value` is text, a number, or a list. A value that looks like epoch milliseconds, including scientific notation such as `1.793275843419E12` from a date form field, is written as `YYYY-MM-DD` |
 | `workflow_urn` | keep it | Same as on `create_data_product` |
 
 Output: `urn` and `structuredProperties`.
@@ -189,16 +189,16 @@ This path reads the raw completion event, so its templates are `{{ fields.name }
 ## Troubleshooting
 
 **`Requirements contain conflicting URLs for package datahub-workflow-actions`**
-Two entries in Extra Pip Libraries resolve to the same pip package name. An earlier build of this wheel was named `datahub-workflow-actions`, which clashes with the engine. Use the `data_product_actions-0.2.4` wheel and remove the old URL.
+Two entries in Extra Pip Libraries resolve to the same pip package name. An earlier build of this wheel was named `datahub-workflow-actions`, which clashes with the engine. Use the `data_product_actions-0.2.5` wheel and remove the old URL.
 
 **`Caught exception while attempting to instantiate Action with type workflow_actions`**
-The installed wheel unpacked into the engine's Python package `datahub_workflow_actions` and overwrote its `context.py`. This happens with the `0.1.0` wheels. Use `0.2.4`, which installs as `data_product_actions`.
+The installed wheel unpacked into the engine's Python package `datahub_workflow_actions` and overwrote its `context.py`. This happens with the `0.1.0` wheels. Use `0.2.5`, which installs as `data_product_actions`.
 
 **`unknown step type 'datahub_workflow_actions.create_product:CreateDataProductAction'`**
 The rule still uses the old import-path type string. The engine only runs registered step names. Change the step `type` to `create_data_product` or `set_data_product_property`. If the known-types list in that message does not include them, the wheel is not installed in the engine's venv; rerun the source.
 
 **`invalid params: workflow_urn Extra inputs are not permitted`**
-The engine is running the `0.2.0` wheel, which did not accept `workflow_urn`. Install `0.2.4` and rerun the source. `structured_property` is an object: put `value` under it, next to `urn`. For any other key in that message, the step does not accept it; check the parameter tables above.
+The engine is running the `0.2.0` wheel, which did not accept `workflow_urn`. Install `0.2.5` and rerun the source. `structured_property` is an object: put `value` under it, next to `urn`. For any other key in that message, the step does not accept it; check the parameter tables above.
 
 **`rule ... not fired (operation CREATE != COMPLETED)` / `(operation MODIFY != COMPLETED)`**
 Not an error. The engine saw the request being created or a step being decided and skipped it. The rule fires on the final `COMPLETED` event with `result = ACCEPTED`.
